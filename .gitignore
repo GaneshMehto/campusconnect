@@ -1,0 +1,25 @@
+# Environment files
+.env
+.env.*
+
+# Python
+.venv
+__pycache__
+*.pyc
+
+# Node
+node_modules
+dist
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Vite
+.vite
+
+# Build folders
+build
+coverage
