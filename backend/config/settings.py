@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    CORS_ORIGINS: str = "http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,https://campusconnect-h1bwzyxxx-ganeshmehtos-projects.vercel.app"
 
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_MB: int = 5
