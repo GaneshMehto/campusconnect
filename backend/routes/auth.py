@@ -1,7 +1,8 @@
 from typing import Annotated
 from datetime import datetime, timezone
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -25,6 +26,7 @@ from schemas.auth import (
 from services.email import email_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+log = logging.getLogger(__name__)
 
 
 @router.post("/register/student", response_model=Token, status_code=201)
@@ -346,3 +348,150 @@ def resend_verification(payload: ResendVerificationRequest, db: Annotated[Sessio
     email_service.send_verification_email(user.email, verification_url, full_name)
 
     return {"message": "If that email is registered and not verified, we've sent a verification link"}
+
+
+@router.get("/test-email")
+def test_email(recipient_email: Annotated[str, Query(description="Email address to send test email to")] = None):
+    """
+    Test endpoint for verifying Resend email integration.
+    
+    This endpoint helps debug email delivery issues. It sends a test email
+    to the provided email address and returns detailed information about:
+    - RESEND_API_KEY configuration
+    - Resend client initialization
+    - Email sending attempt and response
+    
+    Query Parameters:
+        recipient_email: Email address to receive the test email (required)
+    
+    Example:
+        GET /api/v1/auth/test-email?recipient_email=test@example.com
+    
+    Returns:
+        JSON with test results and any error messages
+    """
+    if not recipient_email:
+        raise HTTPException(
+            status_code=400,
+            detail="recipient_email query parameter is required"
+        )
+    
+    log.info(f"🧪 TEST EMAIL ENDPOINT CALLED for {recipient_email}")
+    
+    # Step 1: Check API Key Configuration
+    api_key_configured = bool(settings.RESEND_API_KEY)
+    api_key_preview = f"{settings.RESEND_API_KEY[:8]}...{settings.RESEND_API_KEY[-4:]}" if settings.RESEND_API_KEY else "NOT SET"
+    
+    log.info(f"📋 Step 1: RESEND_API_KEY configured: {api_key_configured} ({api_key_preview})")
+    
+    if not api_key_configured:
+        error_msg = "RESEND_API_KEY environment variable not set"
+        log.error(f"❌ {error_msg}")
+        raise HTTPException(
+            status_code=500,
+            detail=error_msg
+        )
+    
+    # Step 2: Check Email Service Initialization
+    if not email_service.resend:
+        error_msg = "Email service not initialized. Check RESEND_API_KEY or resend library installation"
+        log.error(f"❌ {error_msg}")
+        raise HTTPException(
+            status_code=500,
+            detail=error_msg
+        )
+    
+    log.info("✓ Step 2: Email service initialized")
+    
+    # Step 3: Send Test Email
+    test_url = f"{settings.FRONTEND_URL}/test-verification?token=TEST123"
+    test_html = f"""
+    <html>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2>🧪 CampusConnect Email Test</h2>
+                <p>This is a test email from the <strong>CampusConnect</strong> platform to verify Resend integration is working correctly.</p>
+                <p style="background-color: #f0f0f0; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px;">
+                    <strong>Test Details:</strong><br>
+                    Environment: {settings.ENV}<br>
+                    App: {settings.APP_NAME}<br>
+                    Frontend: {settings.FRONTEND_URL}<br>
+                    Timestamp: {datetime.now(timezone.utc).isoformat()}
+                </p>
+                <p>
+                    <a href="{test_url}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Test Link
+                    </a>
+                </p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="color: #999; font-size: 12px;">If you received this email, Resend integration is working! ✓</p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    try:
+        log.info(f"📧 Attempting to send test email to {recipient_email}")
+        response = email_service.resend.emails.send({
+            "from": f"{settings.APP_NAME} <onboarding@resend.dev>",
+            "to": recipient_email,
+            "subject": f"🧪 {settings.APP_NAME} Email Integration Test",
+            "html": test_html,
+        })
+        
+        log.info(f"📬 Resend API Response: {response}")
+        
+        if isinstance(response, dict) and response.get("id"):
+            message_id = response.get("id")
+            log.info(f"✓ Step 3: Test email sent successfully (Message ID: {message_id})")
+            return {
+                "status": "success",
+                "message": f"Test email sent successfully to {recipient_email}",
+                "details": {
+                    "recipient": recipient_email,
+                    "sender": f"{settings.APP_NAME} <onboarding@resend.dev>",
+                    "message_id": message_id,
+                    "environment": settings.ENV,
+                    "api_key_configured": api_key_configured,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+                "next_steps": "Check your inbox (and spam folder) for the test email. If you don't receive it, check the logs for detailed error messages."
+            }
+        else:
+            error_detail = str(response)
+            log.error(f"✗ Step 3: Resend API returned non-success response: {error_detail}")
+            return {
+                "status": "api_error",
+                "message": "Resend API returned an error",
+                "details": {
+                    "recipient": recipient_email,
+                    "api_response": error_detail,
+                    "environment": settings.ENV,
+                },
+                "troubleshooting": [
+                    "Verify RESEND_API_KEY is correct in environment variables",
+                    "Check Resend dashboard for API key validity",
+                    "Verify sender domain is properly configured in Resend",
+                    "Check recipient email address is valid",
+                ]
+            }
+            
+    except Exception as e:
+        error_msg = str(e)
+        log.exception(f"✗ Step 3: Exception while sending test email: {error_msg}")
+        return {
+            "status": "error",
+            "message": "Exception occurred while sending test email",
+            "details": {
+                "recipient": recipient_email,
+                "error": error_msg,
+                "exception_type": type(e).__name__,
+                "environment": settings.ENV,
+            },
+            "troubleshooting": [
+                "Check if resend library is installed: pip install resend",
+                "Verify RESEND_API_KEY environment variable is set",
+                "Check network connectivity to Resend API",
+                "Review backend logs for detailed error information",
+            ]
+        }
