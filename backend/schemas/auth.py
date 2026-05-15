@@ -33,3 +33,24 @@ class LoginResponse(Token):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Request to initiate password reset."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request to reset password with token."""
+    token: str
+    password: str = Field(min_length=8, max_length=128)
+
+
+class VerifyEmailRequest(BaseModel):
+    """Request to verify email."""
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    """Request to resend verification email."""
+    email: EmailStr

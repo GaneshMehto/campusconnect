@@ -41,6 +41,10 @@ export default function LoginPage() {
         <label className="block mt-4 text-sm">Password</label>
         <input type="password" className="mt-2 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" value={password} onChange={(e) => setPassword(e.target.value)} />
 
+        <Link to="/forgot-password" className="mt-2 text-sm text-brand-600 hover:underline inline-block">
+          Forgot password?
+        </Link>
+
         <button disabled={submitting} className="mt-6 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white">
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>

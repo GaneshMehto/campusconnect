@@ -1,4 +1,5 @@
 from typing import Annotated
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -6,14 +7,22 @@ from jose import JWTError, jwt
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
-from auth.security import hash_password, verify_password, create_access_token, create_refresh_token
+from auth.security import (
+    hash_password, verify_password, create_access_token, create_refresh_token,
+    create_reset_token, create_verification_token
+)
 from config.settings import settings
 from database.deps import get_db
 from models.enums import UserRole
 from models.user import User
 from models.student import Student
 from models.recruiter import Recruiter
-from schemas.auth import Token, RegisterStudentRequest, RegisterRecruiterRequest, LoginRequest, LoginResponse, RefreshTokenRequest
+from schemas.auth import (
+    Token, RegisterStudentRequest, RegisterRecruiterRequest, LoginRequest, 
+    LoginResponse, RefreshTokenRequest, ForgotPasswordRequest, ResetPasswordRequest,
+    VerifyEmailRequest, ResendVerificationRequest
+)
+from services.email import email_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -190,3 +199,150 @@ def refresh_token(payload: RefreshTokenRequest, db: Annotated[Session, Depends(g
 def logout():
     # JWTs are stateless; the SPA completes logout by clearing stored tokens.
     return {"ok": True}
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, db: Annotated[Session, Depends(get_db)]):
+    """Initiate password reset by sending a reset email."""
+    try:
+        user = db.query(User).filter(User.email == payload.email).first()
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    # Always return success for security (don't leak if email exists)
+    if not user:
+        return {"message": "If that email is registered, we've sent a password reset link"}
+
+    # Generate reset token
+    reset_token = create_reset_token(subject=str(user.id))
+    user.reset_token = reset_token
+    user.reset_token_expiry = datetime.now(timezone.utc).replace(microsecond=0) + __import__('datetime').timedelta(
+        hours=settings.JWT_RESET_TOKEN_EXPIRE_HOURS
+    )
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to initiate password reset")
+
+    # Send reset email
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+    full_name = getattr(user.student_profile, 'full_name', None) or getattr(user.recruiter_profile, 'full_name', None)
+    
+    email_service.send_password_reset_email(user.email, reset_url, full_name)
+
+    return {"message": "If that email is registered, we've sent a password reset link"}
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Annotated[Session, Depends(get_db)]):
+    """Reset password using a valid reset token."""
+    try:
+        data = jwt.decode(payload.token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        user_id = int(data.get("sub") or 0)
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    if data.get("token_use") != "reset" or not user_id:
+        raise HTTPException(status_code=400, detail="Invalid reset token")
+
+    try:
+        user = db.get(User, user_id)
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check token expiry
+    if not user.reset_token_expiry or user.reset_token_expiry < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+
+    # Update password and clear reset token
+    user.password_hash = hash_password(payload.password)
+    user.reset_token = None
+    user.reset_token_expiry = None
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to reset password")
+
+    return {"message": "Password reset successfully"}
+
+
+@router.post("/verify-email")
+def verify_email(payload: VerifyEmailRequest, db: Annotated[Session, Depends(get_db)]):
+    """Verify email address using verification token."""
+    try:
+        data = jwt.decode(payload.token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        user_id = int(data.get("sub") or 0)
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    if data.get("token_use") != "verification" or not user_id:
+        raise HTTPException(status_code=400, detail="Invalid verification token")
+
+    try:
+        user = db.get(User, user_id)
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check token expiry
+    if not user.verification_token_expiry or user.verification_token_expiry < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Verification token has expired")
+
+    # Mark email as verified and clear verification token
+    user.is_verified = True
+    user.verification_token = None
+    user.verification_token_expiry = None
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to verify email")
+
+    return {"message": "Email verified successfully"}
+
+
+@router.post("/resend-verification")
+def resend_verification(payload: ResendVerificationRequest, db: Annotated[Session, Depends(get_db)]):
+    """Resend email verification link."""
+    try:
+        user = db.query(User).filter(User.email == payload.email).first()
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    # Always return success for security
+    if not user:
+        return {"message": "If that email is registered and not verified, we've sent a verification link"}
+
+    if user.is_verified:
+        return {"message": "Email is already verified"}
+
+    # Generate verification token
+    verification_token = create_verification_token(subject=str(user.id))
+    user.verification_token = verification_token
+    user.verification_token_expiry = datetime.now(timezone.utc).replace(microsecond=0) + __import__('datetime').timedelta(
+        hours=settings.JWT_VERIFICATION_TOKEN_EXPIRE_HOURS
+    )
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to resend verification email")
+
+    # Send verification email
+    verification_url = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
+    full_name = getattr(user.student_profile, 'full_name', None) or getattr(user.recruiter_profile, 'full_name', None)
+    
+    email_service.send_verification_email(user.email, verification_url, full_name)
+
+    return {"message": "If that email is registered and not verified, we've sent a verification link"}
