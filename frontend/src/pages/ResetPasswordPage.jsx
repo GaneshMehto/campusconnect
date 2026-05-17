@@ -61,7 +61,7 @@ export function ResetPasswordPage() {
       await authApi.resetPassword(token, password)
       setSuccess(true)
       showToast('Password reset successfully', 'success')
-      setTimeout(() => navigate('/login'), 2000)
+      window.setTimeout(() => navigate('/login'), 2000)
     } catch (error) {
       const message = error.response?.data?.detail || 'Failed to reset password'
       showToast(message, 'error')
