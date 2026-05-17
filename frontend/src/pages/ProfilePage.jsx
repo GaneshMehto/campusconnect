@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { usersApi, skillsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { User, FileText, Briefcase, GraduationCap, Award, UploadCloud, Download, Plus, X, ExternalLink, Globe } from 'lucide-react';
+import { User, FileText, Award, UploadCloud, Download, Globe } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
