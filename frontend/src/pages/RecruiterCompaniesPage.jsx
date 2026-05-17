@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect } from 'react'
+import { companiesApi } from '../services/api'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
 
 import DashboardLayout from '../layouts/DashboardLayout'
-import Card from '../components/ui/Card'
-import Button from '../components/ui/Button'
-import { companiesApi } from '../services/api'
+import toast from 'react-hot-toast'
 
 export default function RecruiterCompaniesPage() {
   const [items, setItems] = useState([])
@@ -40,15 +40,19 @@ export default function RecruiterCompaniesPage() {
       <div className="text-sm text-slate-500">Create your company profile before posting jobs.</div>
 
       <Card className="mt-5 p-5">
-        <div className="font-medium">Create company</div>
-        <div className="mt-3 grid md:grid-cols-2 gap-3">
-          <input className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" placeholder="Company name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
-          <input className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" placeholder="Website" value={form.website} onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))} />
-          <textarea className="md:col-span-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" placeholder="Description" rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
-        </div>
-        <div className="mt-3">
-          <Button disabled={!form.name.trim()} onClick={create}>Create</Button>
-        </div>
+        <CardHeader>
+          <CardTitle>Create company</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mt-3 grid md:grid-cols-2 gap-3">
+            <input className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" placeholder="Company name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+            <input className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" placeholder="Website" value={form.website} onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))} />
+            <textarea className="md:col-span-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" placeholder="Description" rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
+          </div>
+          <div className="mt-3">
+            <Button disabled={!form.name.trim()} onClick={create}>Create</Button>
+          </div>
+        </CardContent>
       </Card>
 
       <div className="mt-5 grid gap-3">

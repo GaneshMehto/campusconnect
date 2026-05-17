@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { usersApi, skillsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { User, FileText, Briefcase, GraduationCap, Award, UploadCloud, Download, Plus, X, Github, Linkedin, ExternalLink } from 'lucide-react';
+import { User, FileText, Briefcase, GraduationCap, Award, UploadCloud, Download, Plus, X, ExternalLink, Globe } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -301,11 +301,11 @@ export default function ProfilePage() {
               <CardContent className="pt-6 space-y-4">
                  <div className="grid gap-4 md:grid-cols-2">
                    <div className="flex flex-col gap-2">
-                      <label className="text-sm font-medium flex items-center gap-2"><Github className="h-4 w-4"/> GitHub URL</label>
+                      <label className="text-sm font-medium flex items-center gap-2"><Globe className="h-4 w-4"/> GitHub URL</label>
                       <Input placeholder="https://github.com/username" />
                    </div>
                    <div className="flex flex-col gap-2">
-                      <label className="text-sm font-medium flex items-center gap-2"><Linkedin className="h-4 w-4"/> LinkedIn URL</label>
+                      <label className="text-sm font-medium flex items-center gap-2"><Globe className="h-4 w-4"/> LinkedIn URL</label>
                       <Input placeholder="https://linkedin.com/in/username" />
                    </div>
                  </div>

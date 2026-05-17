@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import DashboardLayout from '../layouts/DashboardLayout'
-import Card from '../components/ui/Card'
 import { analyticsApi } from '../services/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState(null)

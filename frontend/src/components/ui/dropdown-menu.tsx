@@ -1,9 +1,10 @@
 import * as React from "react"
-import { Root, Trigger, Content, Item, Label, Separator, Portal } from "@radix-ui/react-dropdown-menu"
+import { Root, Trigger, Content, Item, Label, Separator, Portal, Group } from "@radix-ui/react-dropdown-menu"
 import { cn } from "@/lib/utils"
 
 const DropdownMenu = Root
 const DropdownMenuTrigger = Trigger
+const DropdownMenuGroup = Group
 
 const DropdownMenuContent = React.forwardRef<React.ElementRef<typeof Content>, React.ComponentPropsWithoutRef<typeof Content>>(({ className, sideOffset = 4, ...props }, ref) => (
   <Portal>
@@ -27,4 +28,4 @@ const DropdownMenuSeparator = React.forwardRef<React.ElementRef<typeof Separator
 ))
 DropdownMenuSeparator.displayName = Separator.displayName
 
-export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator }
+export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuGroup }

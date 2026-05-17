@@ -14,10 +14,10 @@ import {
   LineChart,
   Line,
 } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/button'
 
 import DashboardLayout from '../../layouts/DashboardLayout'
-import Card from '../../components/ui/Card'
-import Button from '../../components/ui/Button'
 
 import { adminApi, analyticsApi } from '../../services/api'
 
@@ -41,7 +41,7 @@ const Stat = ({ label, value, hint }) => (
 
 const clampPageSize = (n) => Math.max(5, Math.min(50, Number(n || 20)))
 
-export default function AdminDashboard() {
+function AdminDashboard() {
   const [tab, setTab] = useState('overview')
 
   const [summary, setSummary] = useState(null)
@@ -838,3 +838,5 @@ export default function AdminDashboard() {
     </DashboardLayout>
   )
 }
+
+export default AdminDashboard

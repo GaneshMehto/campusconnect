@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect } from 'react'
+import { adminApi, authApi } from '../services/api'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
 
 import DashboardLayout from '../layouts/DashboardLayout'
-import Card from '../components/ui/Card'
-import Button from '../components/ui/Button'
-import { adminApi } from '../services/api'
+import toast from 'react-hot-toast'
 
 export default function AdminRecruitersPage() {
   const [items, setItems] = useState([])
