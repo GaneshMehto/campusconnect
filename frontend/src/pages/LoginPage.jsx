@@ -3,6 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 import { useAuth } from '../context/AuthContext'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
+import { Input } from '../components/ui/input'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -30,32 +33,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-50 dark:bg-slate-950 px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6">
-        <div className="text-xl font-semibold">Sign in</div>
-        <div className="mt-1 text-sm text-slate-500">Access your dashboard.</div>
+    <main className="min-h-[100svh] overflow-y-auto bg-grid bg-slate-50 px-4 py-8 text-slate-950 dark:bg-slate-950 dark:text-slate-50 sm:py-12">
+      <div className="mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-md items-center justify-center sm:min-h-[calc(100svh-6rem)]">
+        <Card className="w-full border-slate-200 bg-white shadow-lg shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-950 dark:shadow-black/20">
+          <form onSubmit={onSubmit} className="flex flex-col">
+            <CardHeader className="space-y-2 pb-5">
+              <CardTitle className="text-2xl">Sign in</CardTitle>
+              <CardDescription>Access your dashboard.</CardDescription>
+            </CardHeader>
 
-        <label className="block mt-6 text-sm">Email</label>
-        <input className="mt-2 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-        <label className="block mt-4 text-sm">Password</label>
-        <input type="password" className="mt-2 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
 
-        <Link to="/forgot-password" className="mt-2 text-sm text-brand-600 hover:underline inline-block">
-          Forgot password?
-        </Link>
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            </CardContent>
 
-        <button disabled={submitting} className="mt-6 w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white">
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+            <CardFooter className="flex-col gap-4 border-t border-slate-100 pt-6 dark:border-slate-800">
+              <Button type="submit" disabled={submitting} className="w-full">
+                {submitting ? 'Signing in...' : 'Sign in'}
+              </Button>
 
-        <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-          New here?{' '}
-          <Link className="text-brand-600 hover:underline" to="/register">
-            Create an account
-          </Link>
-        </div>
-      </form>
-    </div>
+              <p className="text-center text-sm text-muted-foreground">
+                New here?{' '}
+                <Link className="font-medium text-primary underline-offset-4 hover:underline" to="/register">
+                  Create an account
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    </main>
   )
 }
